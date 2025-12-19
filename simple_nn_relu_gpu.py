@@ -4,6 +4,8 @@ import torch.optim as optim
 
 import helper_utils_relu as helper_utils
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # Combined dataset: bikes for short distances, cars for longer ones
 distances = torch.tensor([
     [1.0], [1.5], [2.0], [2.5], [3.0], [3.5], [4.0], [4.5], [5.0], [5.5],
@@ -11,7 +13,9 @@ distances = torch.tensor([
     [11.0], [11.5], [12.0], [12.5], [13.0], [13.5], [14.0], [14.5],
     [15.0], [15.5],
     [16.0], [16.5], [17.0], [17.5], [18.0], [18.5], [19.0], [19.5], [20.0],[20.5]
-], dtype=torch.float32)
+], dtype=torch.float32,
+device = device)
+print(distances.device)
 
 # Corresponding delivery times in minutes
 times = torch.tensor([
@@ -23,9 +27,11 @@ times = torch.tensor([
     [86.55], [88.33], [86.83],
     [89.24], [88.11], [88.16], [91.77], [92.27], [92.13], [90.73],
     [90.39], [92.98],[93.5]
-], dtype=torch.float32)
+], dtype=torch.float32,
+device = device )
+print(times.device)
 
-helper_utils.plot_data(distances, times)
+# helper_utils.plot_data(distances, times)
 
 #Calculating mean and standard deviation for normalization
 distances_mean = distances.mean()
@@ -34,9 +40,11 @@ times_mean = times.mean()
 times_std = times.std()
 
 distances_norm = (distances - distances_mean)/distances_std
+distances_norm = distances_norm.to(device)
 times_norm = (times - times_mean)/times_std
+times_norm = times_norm.to(device)
 
-helper_utils.plot_data(distances_norm, times_norm, normalize=True)
+# helper_utils.plot_data(distances_norm, times_norm, normalize=True)
 
 torch.manual_seed(27)
 model = nn.Sequential(
@@ -44,6 +52,8 @@ model = nn.Sequential(
     nn.ReLU(),
     nn.Linear(5,1)
     )
+model = model.to(device)
+
 
 #Defining loss function and optimizer
 loss_function = nn.MSELoss()
@@ -61,25 +71,25 @@ for ep in range(3000):
     loss.backward()
     #Update parameters
     optimizer.step()
-    if (ep+1) % 1000 == 0:
-        helper_utils.plot_training_progress(
-            epoch = ep,
-            loss = loss,
-            model = model,
-            distances_norm = distances_norm,
-            times_norm = times_norm
-        )
+    # if (ep+1) % 1000 == 0:
+    #     helper_utils.plot_training_progress(
+    #         epoch = ep,
+    #         loss = loss,
+    #         model = model,
+    #         distances_norm = distances_norm,
+    #         times_norm = times_norm
+    #     )
 print("\nTraining complete")
 print(f"\nFinal loss: {loss.item():.4f}")
 
-helper_utils.plot_final_fit(model,distances,times,distances_norm,times_std,times_mean)
+# helper_utils.plot_final_fit(model,distances,times,distances_norm,times_std,times_mean)
 
 #Making a prediction
 distance_to_predict = 5.1
 
 with torch.no_grad():
     #Convert to tensor
-    distance_tensor = torch.tensor([[distance_to_predict]], dtype=torch.float32)
+    distance_tensor = torch.tensor([[distance_to_predict]], dtype=torch.float32, device=device)
     #Normalize
     new_distance_norm = (distance_tensor - distances_mean)/distances_std
 

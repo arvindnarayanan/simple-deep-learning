@@ -1,10 +1,25 @@
+"""
+Given is a set of previous distances travelled and times taken to travel each distance by bike for a delivery
+service. The program creates a simple neural network using pytorch which is trained, with the given data, to
+predict the time that would be taken to travel a distance not seen before.
+
+A model is created with a single neuron with one input and one output. This neuron is linear. Assuming the 
+trend in distances and times is linear and the equation for the line is time[y] = W*distance[x] + b, the model first applies 
+random values of W and b and checks it with the real given data, calculating a 'loss' [error] of how far
+off its prediction was. It then uses an optimizer to adjust the values of W and b, aiming to make the loss
+smaller. It repeats this 500 times. The model is now trained.
+
+Using the trained model, it inputs distance value, the model predicts the time for this unseen distances and outputs it.
+"""
+
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 
 import helper_utils
 
-torch.manual_seed(42)
+torch.manual_seed(42) #Allows the randomly generated numbers to be reproduced
 
 #Input data
 distances = torch.tensor([[1.0],[2.0],[3.0],[4.0]], dtype=torch.float32)
@@ -17,40 +32,39 @@ model = nn.Sequential(nn.Linear(1,1))
 
 
 #Defining loss function and optimizer
-loss_function = nn.MSELoss()
-optimizer = optim.SGD(model.parameters(),lr=0.01)
+loss_function = nn.MSELoss() #The function used to calculate the loss: Mean Squared Error
+optimizer = optim.SGD(model.parameters(),lr=0.01) #Function used to optimize the prediction, tries to reduce the loss. 'lr' is the learning rate: how much it adjusts the prediction
 
 #Training loop
-for epoch in range(500):
-    #Reset optimizer gradients
+for epoch in range(500): #Epoch -- one complete pass through the data
+    #Reset optimizer gradients to 0, because gradients are accumulated in the optimizer unwantedly from previous epochs
     optimizer.zero_grad()
-    #Make predictions
+    #Make predictions using the model
     outputs = model(distances)
     #Calculate loss(error)
     loss = loss_function(outputs, times)
-    #Calculate adjustments
+    #Calculate the adjustments
     loss.backward()
-    #Update model's parameters
+    #Update model's parameters with the adjustments calculated with loss.backward()
     optimizer.step()
-    #Print loss every 50 epochs
+    #Print the loss every 50 epochs
     if (epoch+1) % 50 == 0:
         print(f"Epoch {epoch + 1}: Loss = {loss.item()}")
 
 helper_utils.plot_results(model,distances,times)
 
-distance_to_predict = 7.0
-with torch.no_grad():
-    #Convert variable into tensor
+distance_to_predict = float(input("Enter distance to predict: "))
+
+
+with torch.no_grad(): #Training is over
+    #Convert the new input distance into tensor, so the model can understand
     new_distance = torch.tensor([[distance_to_predict]], dtype=torch.float32)
 
     #Pass new data to trained model
     predicted_time = model(new_distance)
 
-    print(f"Prediction for a {distance_to_predict}-mile delivery: {predicted_time.item():.1f}")
-    if predicted_time.item()>30:
-        print("Do not take the job")
-    else:
-        print("Take the job")
+    print(f"Prediction for a {distance_to_predict}-mile delivery: {predicted_time.item():.1f}")#.item() is used to return only the relevent number from predicted_time (as it is a tensor)
+
 
 layer = model[0]
 
